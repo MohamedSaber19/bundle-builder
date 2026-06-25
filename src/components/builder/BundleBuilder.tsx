@@ -1,17 +1,10 @@
-import productsData from "@/data/products.json";
 import { useBundleStore } from "@/store/bundleStore";
-import type { Category, Product } from "@/types";
-import React, { useEffect } from "react";
+import React from "react";
 import ReviewPanel from "../review/ReviewPanel";
 import AccordionBuilder from "./AccordionBuilder";
 
 const BundleBuilder: React.FC = () => {
-  const { setCategories, setProducts, saveBundleData } = useBundleStore();
-
-  useEffect(() => {
-    setCategories(productsData.categories as Category[]);
-    setProducts(productsData.products as Product[]);
-  }, [setCategories, setProducts]);
+  const saveBundleData = useBundleStore((state) => state.saveBundleData);
 
   const handleSaveSystem = () => {
     saveBundleData();

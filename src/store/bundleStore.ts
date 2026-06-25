@@ -19,15 +19,11 @@ interface BundleBuilderState {
   expandedStep: string | null;
   selectedVariant: { [productId: string]: string | null };
 
-  // Computed
+  // Computed Total Metrics
   totalPrice: number;
   savings: number;
 
-  // Actions - Data
-  setCategories: (categories: Category[]) => void;
-  setProducts: (products: Product[]) => void;
-
-  // Actions - Selection
+  // Actions - Selection Mutations
   addSelection: (
     category: string,
     productId: string,
@@ -45,29 +41,25 @@ interface BundleBuilderState {
     quantity: number,
   ) => void;
 
-  // Actions - UI
+  // Actions - UI Updates
   setExpandedStep: (stepId: string | null) => void;
   selectVariant: (productId: string, variantId: string | null) => void;
 
-  // Actions - Computed
+  // Actions - Computation Engine
   calculateTotals: () => void;
 
-  // Actions - State
-  resetBuilder: () => void;
-  loadState: (state: Partial<BundleBuilderState>) => void;
-  getState: () => BundleBuilderState;
-
-  // 💾 Manual Save Action
+  // Manual Save Action (localStorage boundary)
   saveBundleData: () => void;
 
-  // Helpers
+  // Optimised Helper Selectors
   getProductById: (id: string) => Product | undefined;
   getSelectedCount: (category: string) => number;
   getAllSelections: () => SelectedVariant[];
   getActiveCategories: () => Category[];
 }
+
 const STORAGE_KEY = "bundle-builder-store";
-//  Reconfigured: Grouped into matching state category keys with active design quantities
+
 const INITIAL_SELECTIONS = {
   cameras: [
     { productId: "wyze-cam-v4", variantId: "white", quantity: 1 },
@@ -102,7 +94,6 @@ const getInitialState = () => {
     }
   }
 
-  // Return structural shape matching state expected output directly
   return {
     selections: INITIAL_SELECTIONS,
     selectedVariant: {
@@ -115,12 +106,13 @@ const getInitialState = () => {
 };
 
 const savedData = getInitialState();
-
 const initialProducts = (productsData.products as Product[]).map(
   (p) => [p.id, p] as [string, Product],
 );
+const productsMap = new Map<string, Product>(initialProducts);
+const initialSelections = savedData.selections;
 
-// Compute initial totals from loaded data immediately
+// Fast compute initial state totals to prevent asynchronous hydration layout shifting
 const computeInitialTotals = (
   selections: BundleBuilderState["selections"],
   productsMap: Map<string, Product>,
@@ -143,8 +135,6 @@ const computeInitialTotals = (
   };
 };
 
-const productsMap = new Map<string, Product>(initialProducts);
-const initialSelections = savedData.selections;
 const initialTotals = computeInitialTotals(initialSelections, productsMap);
 
 const initialState = {
@@ -159,34 +149,19 @@ const initialState = {
 export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
   ...initialState,
 
-  setCategories: (categories: Category[]) => set({ categories }),
-
-  setProducts: (products: Product[]) => {
-    set({
-      products: new Map<string, Product>(products.map((p) => [p.id, p])),
-    });
-  },
-
-  addSelection: (
-    category: string,
-    productId: string,
-    variantId: string | null,
-  ) => {
+  addSelection: (category, productId, variantId) => {
     set((state) => {
       const categoryKey = category as keyof typeof state.selections;
       const normalizedVariant = variantId || "default";
 
       const existing = state.selections[categoryKey].find(
-        (s) =>
-          s.productId === productId &&
-          (s.variantId || "default") === normalizedVariant,
+        (s) => s.productId === productId && s.variantId === normalizedVariant,
       );
 
       let updatedSelections: SelectedVariant[];
       if (existing) {
         updatedSelections = state.selections[categoryKey].map((s) =>
-          s.productId === productId &&
-          (s.variantId || "default") === normalizedVariant
+          s.productId === productId && s.variantId === normalizedVariant
             ? { ...s, quantity: s.quantity + 1 }
             : s,
         );
@@ -198,48 +173,30 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
       }
 
       return {
-        selections: {
-          ...state.selections,
-          [categoryKey]: updatedSelections,
-        },
+        selections: { ...state.selections, [categoryKey]: updatedSelections },
       };
     });
     get().calculateTotals();
   },
 
-  removeSelection: (
-    category: string,
-    productId: string,
-    variantId: string | null,
-  ) => {
+  removeSelection: (category, productId, variantId) => {
     set((state) => {
       const categoryKey = category as keyof typeof state.selections;
       const normalizedVariant = variantId || "default";
 
       const updatedSelections = state.selections[categoryKey].filter(
         (s) =>
-          !(
-            s.productId === productId &&
-            (s.variantId || "default") === normalizedVariant
-          ),
+          !(s.productId === productId && s.variantId === normalizedVariant),
       );
 
       return {
-        selections: {
-          ...state.selections,
-          [categoryKey]: updatedSelections,
-        },
+        selections: { ...state.selections, [categoryKey]: updatedSelections },
       };
     });
     get().calculateTotals();
   },
 
-  updateQuantity: (
-    category: string,
-    productId: string,
-    variantId: string | null,
-    quantity: number,
-  ) => {
+  updateQuantity: (category, productId, variantId, quantity) => {
     if (quantity <= 0) {
       get().removeSelection(category, productId, variantId);
       return;
@@ -249,26 +206,23 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
       const categoryKey = category as keyof typeof state.selections;
       const normalizedVariant = variantId || "default";
 
-      const updatedSelections = state.selections[categoryKey].map((s) =>
-        s.productId === productId &&
-        (s.variantId || "default") === normalizedVariant
-          ? { ...s, quantity }
-          : s,
-      );
+      const updatedSelections = (state.selections[categoryKey] =
+        state.selections[categoryKey].map((s) =>
+          s.productId === productId && s.variantId === normalizedVariant
+            ? { ...s, quantity }
+            : s,
+        ));
 
       return {
-        selections: {
-          ...state.selections,
-          [categoryKey]: updatedSelections,
-        },
+        selections: { ...state.selections, [categoryKey]: updatedSelections },
       };
     });
     get().calculateTotals();
   },
 
-  setExpandedStep: (stepId: string | null) => set({ expandedStep: stepId }),
+  setExpandedStep: (stepId) => set({ expandedStep: stepId }),
 
-  selectVariant: (productId: string, variantId: string | null) => {
+  selectVariant: (productId, variantId) => {
     set((state) => ({
       selectedVariant: {
         ...state.selectedVariant,
@@ -299,29 +253,13 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
     });
   },
 
-  resetBuilder: () => set(initialState),
+  getProductById: (id) => get().products.get(id),
 
-  loadState: (partialState: Partial<BundleBuilderState>) => {
-    set((state) => ({ ...state, ...partialState }));
-    get().calculateTotals();
-  },
-
-  getState: () => get(),
-  getProductById: (id: string) => get().products.get(id),
-
-  saveBundleData: () => {
-    const { selections, selectedVariant } = get();
-    const dataToSave = {
-      selections,
-      selectedVariant,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-  },
-
-  getSelectedCount: (category: string) => {
+  // Evaluates distinct unique product item selections (Length of active selections matching requirement)
+  getSelectedCount: (category) => {
     const categoryKey = category as keyof BundleBuilderState["selections"];
     const list = get().selections[categoryKey] || [];
-    return list.reduce((sum, item) => sum + item.quantity, 0);
+    return list.filter((item) => item.quantity > 0).length;
   },
 
   getAllSelections: () => {
@@ -341,5 +279,13 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
       const items = state.selections[categoryKey] || [];
       return items.some((item) => item.quantity > 0);
     });
+  },
+
+  saveBundleData: () => {
+    const { selections, selectedVariant } = get();
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ selections, selectedVariant }),
+    );
   },
 }));
