@@ -1,5 +1,3 @@
-Markdown
-
 # 📦 Bundle Builder Project
 
 ## 🛠️ Setup & Run Instructions
