@@ -34,7 +34,7 @@ const AccordionBuilder: React.FC = () => {
       type="single"
       collapsible
       value={expandedStep || undefined}
-      onValueChange={setExpandedStep}
+      onValueChange={(value) => setExpandedStep(value || null)}
     >
       {categories.map((category, index) => {
         const categoryKey = category.id as keyof typeof selections;

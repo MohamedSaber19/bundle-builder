@@ -1,7 +1,7 @@
 import { useBundleStore } from "@/store/bundleStore";
 import { cn } from "@/utils/cn";
 import { getProductAsset } from "@/utils/imageLoader";
-import React, { useMemo } from "react";
+import React from "react";
 import shippingIcon from "../../assets/images/fast-shipping.png";
 import SatisfactionBadge from "../../assets/images/satisfaction-badge.png";
 
@@ -9,53 +9,33 @@ interface ReviewPanelProps {
   onSaveSystem?: () => void;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  cameras: "CAMERAS",
+  sensors: "SENSORS",
+  accessories: "ACCESSORIES",
+  plan: "PLAN",
+};
+
+const CATEGORY_ORDER = ["cameras", "sensors", "accessories", "plan"];
+
 const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
-  const { selections, products, updateQuantity } = useBundleStore();
+  const selections = useBundleStore((state) => state.selections);
+  const products = useBundleStore((state) => state.products);
+  const updateQuantity = useBundleStore((state) => state.updateQuantity);
+  const discountedTotal = useBundleStore((state) => state.totalPrice);
+  const netSavings = useBundleStore((state) => state.savings);
+  // Derive whether items exist using a simple boolean check (primitives don't break equality loops)
+  const hasItems = [
+    ...selections.cameras,
+    ...selections.plan,
+    ...selections.sensors,
+    ...selections.accessories,
+  ].some((s) => s.quantity > 0);
 
-  const categoryLabels: Record<string, string> = {
-    cameras: "CAMERAS",
-    sensors: "SENSORS",
-    accessories: "ACCESSORIES",
-    plan: "PLAN",
-  };
-
-  const categoryOrder = ["cameras", "sensors", "accessories", "plan"];
-
-  const { originalTotal, discountedTotal, netSavings, hasItems } =
-    useMemo(() => {
-      let originalSum = 0;
-      let discountedSum = 0;
-      let count = 0;
-
-      categoryOrder.forEach((catId) => {
-        const items = selections[catId as keyof typeof selections] || [];
-        items.forEach((item) => {
-          const prod = products.get(item.productId);
-          if (prod) {
-            count += item.quantity;
-            discountedSum += prod.price * item.quantity;
-            originalSum += (prod.compareAtPrice || prod.price) * item.quantity;
-          }
-        });
-      });
-
-      const baseShippingOriginal = 5.99;
-      const finalOriginal =
-        originalSum > 0 ? originalSum + baseShippingOriginal : 0;
-      const finalDiscounted = discountedSum;
-      const savings = finalOriginal - finalDiscounted;
-
-      return {
-        originalTotal: finalOriginal,
-        discountedTotal: finalDiscounted,
-        netSavings: savings > 0 ? savings : 0,
-        hasItems: count > 0,
-      };
-    }, [categoryOrder, selections, products]);
+  const originalTotal = hasItems ? discountedTotal + netSavings + 5.99 : 0;
 
   return (
     <div className="w-full bg-bg-container border rounded-xl p-6 font-sans shadow-xs text-review-itemTitle">
-      {/* Header Information Section */}
       <h2 className="text-2xl font-semibold tracking-tight text-card-title">
         Your security system
       </h2>
@@ -65,12 +45,14 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
       </p>
 
       <div className="grid grid-cols-1 md:max-[1260px]:grid-cols-2 min-[1261px]:flex min-[1261px]:flex-col gap-6 items-start">
-        {/* Product List Wrapper */}
         <div className="w-full space-y-6">
-          {categoryOrder.map((categoryId) => {
-            const categorySelections =
-              selections[categoryId as keyof typeof selections] || [];
-            if (categorySelections.length === 0) return null;
+          {CATEGORY_ORDER.map((categoryId) => {
+            // Filter out non-active elements to prevent rendering empty shell headers
+            const activeSelections = (
+              selections[categoryId as keyof typeof selections] || []
+            ).filter((item) => item.quantity > 0);
+
+            if (activeSelections.length === 0) return null;
 
             return (
               <div
@@ -78,11 +60,11 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                 className="border-t border-review-border pt-4 first:border-t-0 first:pt-0"
               >
                 <h3 className="text-xs font-normal text-review-category-title tracking-wider uppercase mb-3">
-                  {categoryLabels[categoryId]}
+                  {CATEGORY_LABELS[categoryId]}
                 </h3>
 
                 <div className="space-y-4">
-                  {categorySelections.map((selection) => {
+                  {activeSelections.map((selection) => {
                     const product = products.get(selection.productId);
                     if (!product) return null;
 
@@ -96,7 +78,6 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                         key={`${selection.productId}-${selection.variantId || "default"}`}
                         className="flex items-center justify-between gap-2 w-full"
                       >
-                        {/* Image & Title Group */}
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           {product.image && (
                             <img
@@ -104,14 +85,14 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                               alt=""
                               className={cn(
                                 "w-10 h-10 object-contain flex-shrink-0 bg-white rounded-sm",
-                                product.id === "wyze-cam-unlimited" &&
+                                product.category === "plan" &&
                                   "bg-transparent w-5 h-5 -me-1",
                               )}
                             />
                           )}
                           <div className="min-w-0">
                             <p className="font-normal text-sm text-review-item-title truncate">
-                              {product.id === "wyze-cam-unlimited" ? (
+                              {product.category === "plan" ? (
                                 <>
                                   <span className="font-extrabold text-black">
                                     Cam{" "}
@@ -124,13 +105,26 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                                 product.name
                               )}
                             </p>
+                            {/* Render the selected variant text */}
+                            {selection.variantId &&
+                              selection.variantId !== "default" &&
+                              (() => {
+                                const variantObj = product.variants?.find(
+                                  (v) => v.id === selection.variantId,
+                                );
+                                return variantObj ? (
+                                  <span className="block text-[10px] text-review-category-title  font-normal mt-0.5">
+                                    ({variantObj.label})
+                                  </span>
+                                ) : null;
+                              })()}
                           </div>
                         </div>
 
-                        {/* Quantity Stepper */}
-                        {product.id !== "wyze-cam-unlimited" && (
+                        {product.category !== "plan" && (
                           <div className="flex w-18 items-center gap-1 overflow-hidden flex-shrink-0">
                             <button
+                              type="button"
                               onClick={() =>
                                 updateQuantity(
                                   categoryId,
@@ -147,6 +141,7 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                               {selection.quantity}
                             </span>
                             <button
+                              type="button"
                               onClick={() =>
                                 updateQuantity(
                                   categoryId,
@@ -162,7 +157,6 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                           </div>
                         )}
 
-                        {/* Price Labels */}
                         <div className="text-right flex-shrink-0 min-w-[65px]">
                           {product.compareAtPrice > product.price && (
                             <div className="text-xs text-review-price-old line-through leading-none mb-0.5">
@@ -187,7 +181,6 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
             );
           })}
 
-          {/* Shipping Row */}
           {hasItems && (
             <div className="border-t border-review-border pt-4 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -195,7 +188,7 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                   <img
                     src={shippingIcon}
                     alt="Fast shipping"
-                    className=" object-contain flex-shrink-0"
+                    className="object-contain flex-shrink-0"
                   />
                 </div>
                 <p className="font-normal text-sm text-review-item-title">
@@ -214,7 +207,6 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
           )}
         </div>
 
-        {/* Pricing & Summary Checkout Block */}
         {hasItems && (
           <div className="w-full space-y-4 md:max-[1260px]:border-l md:max-[1260px]:border-review-border md:max-[1260px]:pl-6 min-[1261px]:border-t min-[1261px]:border-review-border min-[1261px]:pt-6">
             <div className="flex items-center justify-between gap-4">
@@ -239,7 +231,6 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
               </div>
             </div>
 
-            {/* Dynamic Savings Text */}
             {netSavings > 0 && (
               <div className="w-full text-center py-2 rounded-lg mb-0">
                 <p className="text-xs font-normal text-review-saving-text">
@@ -249,7 +240,6 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
               </div>
             )}
 
-            {/* Action Buttons */}
             <button
               type="button"
               className="w-full py-3.5 bg-brand-purple text-white font-bold rounded-lg hover:opacity-80 transition-colors shadow-xs text-sm cursor-pointer mb-0"
