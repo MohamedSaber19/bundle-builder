@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@theme {
+  /* Font Family Configuration */
+  --font-sans: "Gilroy", sans-serif;
+
+  /* Global/Brand Colors */
+  --color-brand-purple: #4e2fd2;
+  --color-brand-teal: #0aa288;
+  --color-brand-red: #d8392b;
+
+  /* Layout/Container Colors */
+  --color-bg-container: #edf4ff;
+
+  /* Accordion Design Tokens */
+  --color-accordion-title: #0b0d10;
+  --color-accordion-step: #484848;
+  --color-accordion-icon: #6f7882;
+  --color-accordion-border: #1f1f1f;
+
+  /* Product Card Design Tokens */
+  --color-card-title: #1f1f1f;
+  --color-card-desc: rgba(31, 31, 31, 0.75); /* #1F1F1FBF */
+  --color-card-badge-bg: #4e2fd2;
+  --color-card-selected: #4e2fd2;
+  --color-card-variant-selected: #0aa288;
+  --color-card-variant-selected-bg: #1df0bb0a;
+  --color-card-variant-unselected: #cccccc;
+  --color-card-price-old: #d8392b;
+  --color-card-price-now: #575757;
+
+  /* Stepper Counter Buttons (Left Column) */
+  --color-btn-disabled-border: #e6ebf0;
+  --color-btn-disabled-icon: #ced6de;
+  --color-btn-enabled-bg: #f0f4f7;
+  --color-btn-enabled-icon: #525963;
+
+  /* Review Panel Design Tokens (Right Column) */
+  --color-review-category-title: #a8b2bd;
+  --color-review-price-now: #4e2fd2;
+  --color-review-price-old: #6f7882;
+  --color-review-saving-text: #0aa288;
+  --color-review-item-title: #0b0d10;
+  --color-review-border: #ced6de;
+  --color-review-btn-bg: #ffffff;
+  --color-review-btn-icon: #575757;
+  --color-review-btn-disabled-border: #ced6de;
+  --color-review-btn-disabled-icon: #575757;
+}
+
+:root {
+  /* Keeping your base setup for general text/layout rendering */
+  --sans: "Gilroy", sans-serif;
+
+  font: 16px/100% var(--sans);
+  letter-spacing: 0.6px;
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+/* Radix UI Accordion Animations (Kept completely intact) */
+@keyframes slideDown {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+[data-state="open"][data-animation] {
+  animation: slideDown 300ms ease-out;
+}
+
+[data-state="closed"][data-animation] {
+  animation: slideUp 300ms ease-out;
+}
+
+/* 🔤 Gilroy Font Family Setup */
+
+@font-face {
+  font-family: "Gilroy";
+  src: url("/fonts/Gilroy-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Gilroy";
+  src: url("/fonts/Gilroy-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Gilroy";
+  src: url("/fonts/Gilroy-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Gilroy";
+  src: url("/fonts/Gilroy-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Gilroy";
+  src: url("/fonts/Gilroy-Heavy.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+}
+
+body {
+  font-family: var(--font-sans);
+}
