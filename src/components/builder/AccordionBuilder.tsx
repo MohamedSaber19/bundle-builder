@@ -1,0 +1,120 @@
+import camerasIcon from "@/assets/icons/camera.png";
+import ChevronUpIcon from "@/assets/icons/chevron-up.svg";
+import extraProtectionIcon from "@/assets/icons/extra-protection.png";
+import planIcon from "@/assets/icons/plan.png";
+import sensorsIcon from "@/assets/icons/sensors.png";
+import { useBundleStore } from "@/store/bundleStore";
+import * as Accordion from "@radix-ui/react-accordion";
+import React, { useState } from "react";
+import ProductCard from "./ProductCard";
+
+const AccordionBuilder: React.FC = () => {
+  const { categories, products, selections } = useBundleStore();
+
+  // Initializes with the ID of the first category ("cameras")
+  const [activeStep, setActiveStep] = useState<string>(categories[0]?.id || "");
+
+  return (
+    <Accordion.Root
+      type="single"
+      collapsible
+      value={activeStep}
+      onValueChange={(value) => setActiveStep(value)}
+    >
+      {categories.map((category, index) => {
+        const categoryKey = category.id as keyof typeof selections;
+        const categorySelections = selections[categoryKey] || [];
+
+        // Sum up the total combined quantities for all selected items in this category
+        const selectedCount = categorySelections.reduce(
+          (total, item) => total + item.quantity,
+          0,
+        );
+
+        const categoryProducts = Array.from(products.values()).filter(
+          (p) => p.category === category.id,
+        );
+        const stepNumber = index + 1;
+
+        // Find the next category details dynamically for the button
+        const nextCategory = categories[index + 1];
+
+        const stepIcons: Record<string, string> = {
+          cameras: camerasIcon,
+          plan: planIcon,
+          sensors: sensorsIcon,
+          accessories: extraProtectionIcon,
+        };
+
+        return (
+          <Accordion.Item key={category.id} value={category.id}>
+            <Accordion.Header className="flex">
+              <Accordion.Trigger className="w-full flex flex-col bg-transparent border-b border-accordion-border group transition-colors duration-200 data-[state=open]:border-b-0">
+                {/* Top Division: Step Metadata */}
+                <div className="w-full px-[15px] pt-[15px] py-[5px] text-left group-data-[state=open]:bg-bg-container rounded-t-xl">
+                  <span className="text-xs font-normal tracking-wider text-accordion-step block uppercase">
+                    step {stepNumber} of 4
+                  </span>
+                </div>
+
+                {/* Divider Line */}
+                <div className="w-full border-t border-accordion-border" />
+
+                {/* Bottom Division: Title, Icon & Selection State */}
+                <div className="w-full px-[15px] py-5 flex items-center justify-between text-left group-data-[state=open]:bg-bg-container group-data-[state=open]:pb-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">
+                      <img
+                        src={stepIcons[category.id] || "⚙️"}
+                        alt={category.label}
+                      />
+                    </span>
+                    <h3 className="text-2xl font-semibold text-accordion-title">
+                      {category.label}
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-brand-purple font-medium text-sm">
+                    <span>{selectedCount} selected</span>
+                    <img
+                      src={ChevronUpIcon}
+                      alt="Chevron Up"
+                      className="size-3 group-data-[state=open]:rotate-180 transition-transform duration-300"
+                    />
+                  </div>
+                </div>
+              </Accordion.Trigger>
+            </Accordion.Header>
+
+            <Accordion.Content
+              className="px-[15px] pt-[15px] pb-5 bg-bg-container rounded-b-xl overflow-hidden data-animation"
+              data-animation=""
+            >
+              {/* Product Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 min-[1261px]:!grid-cols-2 gap-[15px]">
+                {categoryProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+
+              {/* Dynamic Action Button Panel */}
+              {nextCategory && (
+                <div className="mt-6 flex justify-center w-full">
+                  <button
+                    type="button"
+                    onClick={() => setActiveStep(nextCategory.id)}
+                    className="px-6 py-2 border border-brand-purple text-brand-purple font-normal rounded-lg bg-transparent  hover:bg-white transition-colors duration-200 cursor-pointer text-lg"
+                  >
+                    Next: {nextCategory.label}
+                  </button>
+                </div>
+              )}
+            </Accordion.Content>
+          </Accordion.Item>
+        );
+      })}
+    </Accordion.Root>
+  );
+};
+
+export default AccordionBuilder;
