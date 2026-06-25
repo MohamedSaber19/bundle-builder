@@ -1,6 +1,7 @@
 import { useBundleStore } from "@/store/bundleStore";
 import { cn } from "@/utils/cn";
 import { getProductAsset } from "@/utils/imageLoader";
+import { Minus, Plus } from "lucide-react";
 import React from "react";
 import shippingIcon from "../../assets/images/fast-shipping.png";
 import SatisfactionBadge from "../../assets/images/satisfaction-badge.png";
@@ -135,7 +136,7 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                               }
                               className="w-5 h-5 flex items-center rounded justify-center bg-white text-review-btn-icon font-bold transition-colors cursor-pointer"
                             >
-                              —
+                              <Minus className="size-3" />
                             </button>
                             <span className="w-5 text-center font-bold text-xs text-review-item-title">
                               {selection.quantity}
@@ -152,7 +153,7 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
                               }
                               className="w-5 h-5 flex items-center justify-center bg-white text-review-btn-icon font-bold transition-colors rounded cursor-pointer"
                             >
-                              +
+                              <Plus className="size-3" />
                             </button>
                           </div>
                         )}

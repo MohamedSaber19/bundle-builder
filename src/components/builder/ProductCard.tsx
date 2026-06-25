@@ -1,4 +1,6 @@
 import { useBundleStore } from "@/store/bundleStore";
+import { Minus, Plus } from "lucide-react";
+
 import type { Product } from "@/types";
 import { getProductAsset } from "@/utils/imageLoader";
 import React from "react";
@@ -143,14 +145,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 handleStepperChange(currentQuantity - 1);
               }}
               disabled={currentQuantity === 0}
-              className={`w-5 h-5 p-1.5 flex items-center justify-center rounded text-sm font-bold transition-colors ${
+              className={`w-5 h-5 flex items-center justify-center rounded text-sm font-bold transition-colors ${
                 currentQuantity === 0
                   ? "border-btn-disabled-border bg-white text-btn-disabled-icon cursor-not-allowed border"
                   : "bg-btn-enabled-bg text-btn-enabled-icon hover:bg-gray-50 cursor-pointer"
               }`}
               aria-label="Decrease quantity"
             >
-              —
+              <Minus className="size-3" />
             </button>
 
             <span className="w-5 text-center font-bold text-base text-card-title">
@@ -163,10 +165,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 e.stopPropagation();
                 handleStepperChange(currentQuantity + 1);
               }}
-              className="w-5 h-5 p-1.5 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold transition-colors cursor-pointer"
+              className="w-5 h-5 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold transition-colors cursor-pointer"
               aria-label="Increase quantity"
             >
-              +
+              <Plus className="size-3" />
             </button>
           </div>
         )}
