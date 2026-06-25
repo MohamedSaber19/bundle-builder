@@ -66,19 +66,55 @@ interface BundleBuilderState {
   getAllSelections: () => SelectedVariant[];
   getActiveCategories: () => Category[];
 }
-
-const getSavedState = () => {
-  if (typeof window === "undefined") return null;
-  try {
-    const saved = localStorage.getItem("bundle-builder-store");
-    return saved ? JSON.parse(saved) : null;
-  } catch (error) {
-    console.error("Failed to load state:", error);
-    return null;
-  }
+const STORAGE_KEY = "bundle-builder-store";
+//  Reconfigured: Grouped into matching state category keys with active design quantities
+const INITIAL_SELECTIONS = {
+  cameras: [
+    { productId: "wyze-cam-v4", variantId: "white", quantity: 1 },
+    { productId: "wyze-cam-pan-v3", variantId: "white", quantity: 2 },
+  ],
+  plan: [
+    { productId: "wyze-cam-unlimited", variantId: "default", quantity: 1 },
+  ],
+  sensors: [
+    { productId: "wyze-sense-hub", variantId: "default", quantity: 1 },
+    {
+      productId: "wyze-sense-motion-sensor",
+      variantId: "default",
+      quantity: 2,
+    },
+  ],
+  accessories: [
+    { productId: "wyze-microsd-card-256gb", variantId: "default", quantity: 2 },
+  ],
 };
 
-const savedData = getSavedState();
+const getInitialState = () => {
+  const savedData = localStorage.getItem(STORAGE_KEY);
+  if (savedData) {
+    try {
+      return JSON.parse(savedData);
+    } catch (e) {
+      console.error(
+        "Failed parsing persistent state, falling back to seed data",
+        e,
+      );
+    }
+  }
+
+  // Return structural shape matching state expected output directly
+  return {
+    selections: INITIAL_SELECTIONS,
+    selectedVariant: {
+      "wyze-cam-v4": "white",
+      "wyze-cam-pan-v3": "white",
+      "wyze-cam-floodlight-v2": "white",
+      "wyze-battery-cam-pro": "white",
+    },
+  };
+};
+
+const savedData = getInitialState();
 
 const initialProducts = (productsData.products as Product[]).map(
   (p) => [p.id, p] as [string, Product],
@@ -108,13 +144,7 @@ const computeInitialTotals = (
 };
 
 const productsMap = new Map<string, Product>(initialProducts);
-const initialSelections = savedData?.selections || {
-  cameras: [],
-  plan: [],
-  sensors: [],
-  accessories: [],
-};
-
+const initialSelections = savedData.selections;
 const initialTotals = computeInitialTotals(initialSelections, productsMap);
 
 const initialState = {
@@ -122,7 +152,7 @@ const initialState = {
   products: productsMap,
   selections: initialSelections,
   expandedStep: "cameras",
-  selectedVariant: savedData?.selectedVariant || {},
+  selectedVariant: savedData.selectedVariant,
   ...initialTotals,
 };
 
@@ -144,19 +174,19 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
   ) => {
     set((state) => {
       const categoryKey = category as keyof typeof state.selections;
-      const normalizedVariant = variantId || null;
+      const normalizedVariant = variantId || "default";
 
       const existing = state.selections[categoryKey].find(
         (s) =>
           s.productId === productId &&
-          (s.variantId || null) === normalizedVariant,
+          (s.variantId || "default") === normalizedVariant,
       );
 
       let updatedSelections: SelectedVariant[];
       if (existing) {
         updatedSelections = state.selections[categoryKey].map((s) =>
           s.productId === productId &&
-          (s.variantId || null) === normalizedVariant
+          (s.variantId || "default") === normalizedVariant
             ? { ...s, quantity: s.quantity + 1 }
             : s,
         );
@@ -184,13 +214,13 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
   ) => {
     set((state) => {
       const categoryKey = category as keyof typeof state.selections;
-      const normalizedVariant = variantId || null;
+      const normalizedVariant = variantId || "default";
 
       const updatedSelections = state.selections[categoryKey].filter(
         (s) =>
           !(
             s.productId === productId &&
-            (s.variantId || null) === normalizedVariant
+            (s.variantId || "default") === normalizedVariant
           ),
       );
 
@@ -217,10 +247,11 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
 
     set((state) => {
       const categoryKey = category as keyof typeof state.selections;
-      const normalizedVariant = variantId || null;
+      const normalizedVariant = variantId || "default";
 
       const updatedSelections = state.selections[categoryKey].map((s) =>
-        s.productId === productId && (s.variantId || null) === normalizedVariant
+        s.productId === productId &&
+        (s.variantId || "default") === normalizedVariant
           ? { ...s, quantity }
           : s,
       );
@@ -241,7 +272,7 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
     set((state) => ({
       selectedVariant: {
         ...state.selectedVariant,
-        [productId]: variantId || null,
+        [productId]: variantId || "default",
       },
     }));
   },
@@ -284,7 +315,7 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
       selections,
       selectedVariant,
     };
-    localStorage.setItem("bundle-builder-store", JSON.stringify(dataToSave));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
   },
 
   getSelectedCount: (category: string) => {

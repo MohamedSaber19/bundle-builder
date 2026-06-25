@@ -34,13 +34,8 @@ export interface SelectedVariant {
   quantity: number;
 }
 
-// Legacy types for old components (can be removed later)
-
 export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
+  productId: string;
+  variantId: string; // "default" if no variants exist
   quantity: number;
-  category: "camera" | "plan" | "sensor" | "protection";
-  image?: string;
 }

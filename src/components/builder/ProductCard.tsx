@@ -1,7 +1,7 @@
 import { useBundleStore } from "@/store/bundleStore";
 import type { Product } from "@/types";
 import { getProductAsset } from "@/utils/imageLoader";
-import React, { useMemo } from "react";
+import React from "react";
 
 interface ProductCardProps {
   product: Product;
@@ -26,12 +26,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   );
   const isSelected = productSelections.some((s) => s.quantity > 0);
 
-  const currentQuantity = useMemo(() => {
-    const selection = selections[categoryKey].find(
+  const currentQuantity = useBundleStore((state) => {
+    const categoryKey = product.category as
+      | "cameras"
+      | "plan"
+      | "sensors"
+      | "accessories";
+
+    // If the product has no variants, look for "default"
+    const activeVariantId =
+      product.variants && product.variants.length > 0
+        ? state.selectedVariant[product.id] || product.variants[0].id
+        : "default";
+
+    const selection = state.selections[categoryKey]?.find(
       (s) => s.productId === product.id && s.variantId === activeVariantId,
     );
-    return selection?.quantity || 0;
-  }, [selections, categoryKey, product.id, activeVariantId]);
+
+    return selection ? selection.quantity : 0;
+  });
 
   const hasVariants = product.variants.length > 0;
 
