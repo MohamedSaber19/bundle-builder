@@ -8,53 +8,39 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const {
-    selections,
-    selectedVariant,
-    addSelection,
-    updateQuantity,
-    selectVariant,
-  } = useBundleStore();
+  const selectedVariantMap = useBundleStore((state) => state.selectedVariant);
+  const addSelection = useBundleStore((state) => state.addSelection);
+  const updateQuantity = useBundleStore((state) => state.updateQuantity);
+  const selectVariant = useBundleStore((state) => state.selectVariant);
 
-  const categoryKey = product.category as keyof typeof selections;
+  // Normalized variant mapping strategy across components and actions
+  const hasVariants = product.variants.length > 0;
+  const activeVariantId = hasVariants
+    ? selectedVariantMap[product.id] || product.variants[0].id
+    : "default";
 
-  const activeVariantId =
-    selectedVariant[product.id] || product.variants[0]?.id || null;
-
-  const productSelections = selections[categoryKey].filter(
-    (s) => s.productId === product.id,
-  );
-  const isSelected = productSelections.some((s) => s.quantity > 0);
-
+  // Highly-optimized slice subscription for atomic re-renders
   const currentQuantity = useBundleStore((state) => {
     const categoryKey = product.category as
       | "cameras"
       | "plan"
       | "sensors"
       | "accessories";
-
-    // If the product has no variants, look for "default"
-    const activeVariantId =
-      product.variants && product.variants.length > 0
-        ? state.selectedVariant[product.id] || product.variants[0].id
-        : "default";
-
     const selection = state.selections[categoryKey]?.find(
       (s) => s.productId === product.id && s.variantId === activeVariantId,
     );
-
     return selection ? selection.quantity : 0;
   });
 
-  const hasVariants = product.variants.length > 0;
+  const isSelected = currentQuantity > 0;
 
   const handleVariantSelect = (e: React.MouseEvent, variantId: string) => {
-    e.stopPropagation(); // Prevents the card click toggle from firing
+    e.stopPropagation();
     selectVariant(product.id, variantId);
   };
 
   const handleStepperChange = (newQty: number) => {
-    if (newQty === 0) {
+    if (newQty <= 0) {
       updateQuantity(product.category, product.id, activeVariantId, 0);
     } else if (currentQuantity === 0 && newQty === 1) {
       addSelection(product.category, product.id, activeVariantId);
@@ -63,8 +49,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }
   };
 
-  // Main card container click handler
   const handleCardClick = () => {
+    // Toggles the baseline selection state
     if (currentQuantity === 0) {
       addSelection(product.category, product.id, activeVariantId);
     } else {
@@ -88,12 +74,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       )}
 
       <div className="flex flex-col min-[1260px]:flex-row gap-4 items-start">
-        <div className="w-full min-[1261px]:w-25 min-[1261px]:h-full flex-shrink-0 flex items-center justify-center bg-transparent pt-4">
+        <div className="w-full min-[1261px]:w-24 min-[1261px]:h-full flex-shrink-0 flex items-center justify-center bg-transparent pt-4">
           {product.image ? (
             <img
               src={getProductAsset(product.image) || ""}
               alt={product.name}
-              className="w-25 h-auto object-contain"
+              className="w-24 h-auto object-contain"
             />
           ) : (
             <div className="text-gray-300 text-xs">No Image</div>
@@ -108,7 +94,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {product.description}{" "}
             <a
               href={product.learnMoreUrl}
-              onClick={(e) => e.stopPropagation()} // Prevents toggle when clicking links
+              onClick={(e) => e.stopPropagation()}
               className="text-brand-purple hover:underline font-medium inline-block"
             >
               Learn More
@@ -122,8 +108,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 return (
                   <button
                     key={variant.id}
+                    type="button"
                     onClick={(e) => handleVariantSelect(e, variant.id)}
-                    className={`flex items-center py-1 px-1.5 max-h-[29px] rounded-xs border text-[10px] font-normal transition-all cursor-pointer ${
+                    className={`flex items-center gap-1 py-1 px-1.5 max-h-[29px] rounded-xs border text-[10px] font-normal transition-all cursor-pointer ${
                       isActive
                         ? "border-card-variant-selected text-card-title bg-card-variant-selected-bg shadow-xs"
                         : "border-card-variant-unselected text-card-desc bg-white hover:bg-gray-50"
@@ -133,7 +120,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                       <img
                         src={getProductAsset(variant.image) || ""}
                         alt={variant.label}
-                        className="max-w-full max-h-full object-contain"
+                        className="w-4 h-4 object-contain"
                       />
                     )}
                     {variant.label}
@@ -146,18 +133,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </div>
 
       <div className="flex items-center justify-between pt-3 border-gray-100">
-        {product.id !== "wyze-cam-unlimited" && (
+        {/* Render quantity control conditionally based on data configuration settings */}
+        {product.category !== "plan" && (
           <div className="flex items-center gap-2 px-1 py-2 w-20">
-            {/* Decrease Button */}
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 handleStepperChange(currentQuantity - 1);
               }}
               disabled={currentQuantity === 0}
-              className={`w-5 h-5 p-1.5 flex items-center justify-center rounded  text-sm font-bold transition-colors ${
+              className={`w-5 h-5 p-1.5 flex items-center justify-center rounded text-sm font-bold transition-colors ${
                 currentQuantity === 0
-                  ? "border-btn-disabled-border bg-white hover:bg-white text-btn-disabled-icon cursor-not-allowed border"
+                  ? "border-btn-disabled-border bg-white text-btn-disabled-icon cursor-not-allowed border"
                   : "bg-btn-enabled-bg text-btn-enabled-icon hover:bg-gray-50 cursor-pointer"
               }`}
               aria-label="Decrease quantity"
@@ -165,13 +153,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               —
             </button>
 
-            {/* Quantity Value Display */}
             <span className="w-5 text-center font-bold text-base text-card-title">
               {currentQuantity}
             </span>
 
-            {/* Increase Button */}
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 handleStepperChange(currentQuantity + 1);
@@ -184,7 +171,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
         )}
 
-        {/* Price Display Block */}
         <div className="flex flex-row min-[1261px]:flex-col items-baseline gap-1.5 ms-auto">
           {product.compareAtPrice > product.price && (
             <div className="text-sm font-semibold text-card-price-old line-through leading-none">
