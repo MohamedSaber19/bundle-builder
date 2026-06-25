@@ -4,47 +4,52 @@ import extraProtectionIcon from "@/assets/icons/extra-protection.png";
 import planIcon from "@/assets/icons/plan.png";
 import sensorsIcon from "@/assets/icons/sensors.png";
 import { useBundleStore } from "@/store/bundleStore";
+import type { Product } from "@/types";
 import * as Accordion from "@radix-ui/react-accordion";
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import ProductCard from "./ProductCard";
 
-const AccordionBuilder: React.FC = () => {
-  const { categories, products, selections } = useBundleStore();
+const stepIcons: Record<string, string> = {
+  cameras: camerasIcon,
+  plan: planIcon,
+  sensors: sensorsIcon,
+  accessories: extraProtectionIcon,
+};
 
-  // Initializes with the ID of the first category ("cameras")
-  const [activeStep, setActiveStep] = useState<string>(categories[0]?.id || "");
+const AccordionBuilder: React.FC = () => {
+  const { categories, products, selections, expandedStep, setExpandedStep } =
+    useBundleStore();
+
+  const productsByCategory = useMemo(() => {
+    const map: Record<string, Product[]> = {};
+    products.forEach((product) => {
+      if (!map[product.category]) map[product.category] = [];
+      map[product.category].push(product);
+    });
+    return map;
+  }, [products]);
 
   return (
     <Accordion.Root
       type="single"
       collapsible
-      value={activeStep}
-      onValueChange={(value) => setActiveStep(value)}
+      value={expandedStep || undefined}
+      onValueChange={setExpandedStep}
     >
       {categories.map((category, index) => {
         const categoryKey = category.id as keyof typeof selections;
         const categorySelections = selections[categoryKey] || [];
 
         // Sum up the total combined quantities for all selected items in this category
-        const selectedCount = categorySelections.reduce(
-          (total, item) => total + item.quantity,
-          0,
-        );
+        const selectedCount = categorySelections.filter(
+          (item) => item.quantity > 0,
+        ).length;
 
-        const categoryProducts = Array.from(products.values()).filter(
-          (p) => p.category === category.id,
-        );
+        const categoryProducts = productsByCategory[category.id] || [];
         const stepNumber = index + 1;
 
         // Find the next category details dynamically for the button
         const nextCategory = categories[index + 1];
-
-        const stepIcons: Record<string, string> = {
-          cameras: camerasIcon,
-          plan: planIcon,
-          sensors: sensorsIcon,
-          accessories: extraProtectionIcon,
-        };
 
         return (
           <Accordion.Item key={category.id} value={category.id}>
@@ -102,7 +107,7 @@ const AccordionBuilder: React.FC = () => {
                 <div className="mt-6 flex justify-center w-full">
                   <button
                     type="button"
-                    onClick={() => setActiveStep(nextCategory.id)}
+                    onClick={() => setExpandedStep(nextCategory.id)}
                     className="px-6 py-2 border border-brand-purple text-brand-purple font-normal rounded-lg bg-transparent  hover:bg-white transition-colors duration-200 cursor-pointer text-lg"
                   >
                     Next: {nextCategory.label}
