@@ -54,8 +54,6 @@ interface BundleBuilderState {
   // Optimised Helper Selectors
   getProductById: (id: string) => Product | undefined;
   getSelectedCount: (category: string) => number;
-  getAllSelections: () => SelectedVariant[];
-  getActiveCategories: () => Category[];
 }
 
 const STORAGE_KEY = "bundle-builder-store";
@@ -112,7 +110,6 @@ const initialProducts = (productsData.products as Product[]).map(
 const productsMap = new Map<string, Product>(initialProducts);
 const initialSelections = savedData.selections;
 
-// Fast compute initial state totals to prevent asynchronous hydration layout shifting
 const computeInitialTotals = (
   selections: BundleBuilderState["selections"],
   productsMap: Map<string, Product>,
@@ -206,12 +203,11 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
       const categoryKey = category as keyof typeof state.selections;
       const normalizedVariant = variantId || "default";
 
-      const updatedSelections = (state.selections[categoryKey] =
-        state.selections[categoryKey].map((s) =>
-          s.productId === productId && s.variantId === normalizedVariant
-            ? { ...s, quantity }
-            : s,
-        ));
+      const updatedSelections = state.selections[categoryKey].map((s) =>
+        s.productId === productId && s.variantId === normalizedVariant
+          ? { ...s, quantity }
+          : s,
+      );
 
       return {
         selections: { ...state.selections, [categoryKey]: updatedSelections },
@@ -255,30 +251,10 @@ export const useBundleStore = create<BundleBuilderState>()((set, get) => ({
 
   getProductById: (id) => get().products.get(id),
 
-  // Evaluates distinct unique product item selections (Length of active selections matching requirement)
   getSelectedCount: (category) => {
     const categoryKey = category as keyof BundleBuilderState["selections"];
     const list = get().selections[categoryKey] || [];
     return list.filter((item) => item.quantity > 0).length;
-  },
-
-  getAllSelections: () => {
-    const state = get();
-    return [
-      ...state.selections.cameras,
-      ...state.selections.plan,
-      ...state.selections.sensors,
-      ...state.selections.accessories,
-    ].filter((s) => s.quantity > 0);
-  },
-
-  getActiveCategories: () => {
-    const state = get();
-    return state.categories.filter((category) => {
-      const categoryKey = category.id as keyof BundleBuilderState["selections"];
-      const items = state.selections[categoryKey] || [];
-      return items.some((item) => item.quantity > 0);
-    });
   },
 
   saveBundleData: () => {
