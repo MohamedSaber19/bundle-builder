@@ -76,7 +76,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       )}
 
       <div className="flex flex-col min-[1260px]:flex-row gap-4 items-start">
-        <div className="w-full min-[1261px]:w-24 min-[1261px]:h-full flex-shrink-0 flex items-center justify-center bg-transparent pt-4">
+        <div className="w-full min-[1260px]:w-24 min-[1260px]:h-full flex-shrink-0 flex items-center justify-center bg-transparent pt-4">
           {product.image ? (
             <img
               src={getProductAsset(product.image) || ""}
@@ -173,7 +173,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
         )}
 
-        <div className="flex flex-row min-[1261px]:flex-col items-baseline gap-1.5 ms-auto">
+        <div className="flex flex-row min-[1260px]:flex-col items-baseline gap-1.5 ms-auto">
           {product.compareAtPrice > product.price && (
             <div className="text-sm font-semibold text-card-price-old line-through leading-none">
               ${product.compareAtPrice.toFixed(2)}

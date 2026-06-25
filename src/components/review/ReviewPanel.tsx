@@ -45,7 +45,7 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
         most safe.
       </p>
 
-      <div className="grid grid-cols-1 md:max-[1260px]:grid-cols-2 min-[1261px]:flex min-[1261px]:flex-col gap-6 items-start">
+      <div className="grid grid-cols-1 md:max-[1260px]:grid-cols-2 min-[1260px]:flex min-[1260px]:flex-col gap-6 items-start">
         <div className="w-full space-y-6">
           {CATEGORY_ORDER.map((categoryId) => {
             // Filter out non-active elements to prevent rendering empty shell headers
@@ -209,7 +209,7 @@ const ReviewPanel: React.FC<ReviewPanelProps> = ({ onSaveSystem }) => {
         </div>
 
         {hasItems && (
-          <div className="w-full space-y-4 md:max-[1260px]:border-l md:max-[1260px]:border-review-border md:max-[1260px]:pl-6 min-[1261px]:border-t min-[1261px]:border-review-border min-[1261px]:pt-6">
+          <div className="w-full space-y-4 md:max-[1260px]:border-l md:max-[1260px]:border-review-border md:max-[1260px]:pl-6 min-[1260px]:border-t min-[1260px]:border-review-border min-[1260px]:pt-6">
             <div className="flex items-center justify-between gap-4">
               <img
                 src={SatisfactionBadge}

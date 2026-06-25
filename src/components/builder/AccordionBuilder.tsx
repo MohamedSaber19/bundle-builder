@@ -74,7 +74,7 @@ const AccordionBuilder: React.FC = () => {
                         alt={category.label}
                       />
                     </span>
-                    <h3 className="text-2xl font-semibold text-accordion-title">
+                    <h3 className="text-base lg:text-lg xl:text-2xl font-semibold text-accordion-title">
                       {category.label}
                     </h3>
                   </div>
@@ -96,7 +96,7 @@ const AccordionBuilder: React.FC = () => {
               data-animation=""
             >
               {/* Product Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 min-[1261px]:!grid-cols-2 gap-[15px]">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 min-[1260px]:!grid-cols-2 gap-[15px]">
                 {categoryProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
